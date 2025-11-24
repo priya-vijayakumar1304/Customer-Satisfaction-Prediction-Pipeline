@@ -1,8 +1,33 @@
 import logging
 import pandas as pd
 from zenml import step
+from src.data_cleaning import DataCleaning, DataPreProcessStrategy, DataDivideStrategy
+from typing_extensions import Annotated
+from typing import Tuple
 
 @step
-def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    pass
+def clean_df(df: pd.DataFrame) -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"]
+]:
+    """Data cleaning class which preprocesses the data and divides it into train and test data.
 
+    Args:
+        data: pd.DataFrame
+    """
+    try:
+        prepocess_strategy = DataPreProcessStrategy()
+        data_cleaning = DataCleaning(df, prepocess_strategy)
+        processed_data = data_cleaning.handle_data()
+
+        divide_strategy = DataDivideStrategy()
+        data_cleaning = DataCleaning(processed_data, divide_strategy)
+        X_train, X_test, y_train, y_test = data_cleaning.handle_data()
+        logging.info("Data cleaning completed successfully.")
+        return X_train, X_test, y_train, y_test
+
+    except Exception as e:
+        logging.error(f"Error in clean_df step: {e}")
+        raise e
